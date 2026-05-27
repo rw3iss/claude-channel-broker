@@ -1,6 +1,6 @@
 {
   "name": "claude-broker",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Long-running local daemon that bridges Claude Code sessions and HTTP clients via the Claude Code channels MCP protocol",
   "license": "MIT",
   "type": "module",
@@ -48,5 +48,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }

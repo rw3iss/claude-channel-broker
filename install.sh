@@ -101,6 +101,34 @@ case "$PKG_MGR" in
   npm)  ( cd "$PREFIX" && npm install --no-audit --no-fund ) ;;
 esac
 
+# pnpm 10's approved-builds gate makes `pnpm rebuild` a silent no-op on
+# fresh installs. Locate the better-sqlite3 dir and compile the binding
+# directly with node-gyp — that's what actually produces build/Release/*.node.
+log "compiling native modules (better-sqlite3)"
+BSQLITE_DIR=""
+if [ -d "$PREFIX/node_modules/better-sqlite3" ]; then
+  BSQLITE_DIR="$PREFIX/node_modules/better-sqlite3"
+else
+  BSQLITE_DIR="$(find "$PREFIX/node_modules" -maxdepth 5 -type d -name 'better-sqlite3' -path '*/node_modules/better-sqlite3' 2>/dev/null | head -n1)"
+fi
+if [ -z "$BSQLITE_DIR" ] || [ ! -f "$BSQLITE_DIR/binding.gyp" ]; then
+  warn "could not find better-sqlite3 directory under $PREFIX/node_modules — daemon may not start"
+else
+  if command -v node-gyp >/dev/null 2>&1; then
+    ( cd "$BSQLITE_DIR" && node-gyp rebuild ) || \
+      warn "node-gyp rebuild failed — install python3, make, g++ then re-run --update"
+  else
+    # Fall back to package manager rebuild; may be a no-op on pnpm 10+
+    case "$PKG_MGR" in
+      pnpm) ( cd "$PREFIX" && pnpm rebuild better-sqlite3 ) ;;
+      npm)  ( cd "$PREFIX" && npm rebuild better-sqlite3 ) ;;
+    esac
+    if [ ! -f "$BSQLITE_DIR/build/Release/better_sqlite3.node" ]; then
+      warn "native binding missing after rebuild; install node-gyp (npm i -g node-gyp) then re-run --update"
+    fi
+  fi
+fi
+
 log "building"
 ( cd "$PREFIX" && $PKG_MGR run build )
 
