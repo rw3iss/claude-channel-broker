@@ -1,0 +1,54 @@
+broker:
+  http:
+    host: 127.0.0.1
+    port: 4180
+    auth_token: ${CLAUDE_CHANNEL_TOKEN}
+  socket:
+    path: /tmp/claude-channel.sock
+  defaults:
+    job_ttl_sec: 300
+    heartbeat_timeout_sec: 30
+    sweep_interval_sec: 30
+    long_poll_max_sec: 600
+    client_ref_window_sec: 86400
+    orphan_grace_sec: 120
+
+storage:
+  job_store:
+    driver: sqlite
+    sqlite:
+      path: ${HOME}/.local/state/claude-channel/jobs.sqlite
+
+dispatch:
+  driver: inproc
+
+logging:
+  level: info
+  pretty: true
+
+instructions: |
+  You have access to a "claude-channel" channel. Channel events arrive as
+  <channel source="claude-channel" job_id="..." ...>...</channel> tags.
+
+  For every channel event you receive that contains a `job_id` attribute:
+
+    1. Read the event content. Treat it as a request from a user, even
+       though it didn't come through the chat.
+    2. Do the work the event describes. Use whatever tools you need.
+    3. When the work is done, call the `complete_job` tool with the
+       `job_id` from the original tag and your final answer as `result`.
+       `result` can be a string or a structured object.
+    4. If you decide the work can't be completed, call `fail_job` with
+       the `job_id` and an `error` string explaining why.
+    5. For long-running work where the submitter may want intermediate
+       updates, call `note_progress(job_id, note)` whenever you reach a
+       checkpoint. This is optional.
+
+  Do not skip step 3 or 4. The submitter is waiting for that tool call —
+  without it they get no response. Submitters can also send follow-up
+  comments while you work; those arrive as the same `<channel>` tag with
+  `kind="comment"` and the same `job_id`. Treat them as additions to the
+  original request.
+
+  A `<channel ... kind="cancel" job_id="...">` event means the submitter
+  cancelled the job. Stop working on it; do not call complete_job.

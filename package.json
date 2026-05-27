@@ -1,0 +1,52 @@
+{
+  "name": "claude-channel",
+  "version": "0.1.0",
+  "description": "Long-running local daemon that bridges Claude Code sessions and HTTP clients via the Claude Code channels MCP protocol",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "claude-channel": "bin/claude-channel"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "bin",
+    "config/default.yaml",
+    "migrations",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
+    "dev": "tsx src/cli/index.ts daemon start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "echo 'lint not configured'",
+    "start": "node dist/cli/index.js",
+    "example:one-shot": "tsx examples/one-shot.ts",
+    "example:webhook": "tsx examples/webhook.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "better-sqlite3": "^11.5.0",
+    "commander": "^12.1.0",
+    "fastify": "^5.1.0",
+    "nanoid": "^5.0.9",
+    "pino": "^9.5.0",
+    "pino-pretty": "^11.3.0",
+    "yaml": "^2.6.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
