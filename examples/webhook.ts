@@ -4,19 +4,19 @@
  * as a channel job. Useful for wiring GitHub webhooks, file watchers,
  * etc. into a Claude session.
  *
- *   CLAUDE_CHANNEL_TOKEN=secret SESSION_LABEL=my-session PORT=4191 \
+ *   CLAUDE_BROKER_TOKEN=secret SESSION_LABEL=my-session PORT=4191 \
  *     npx tsx examples/webhook.ts
  */
 import http from 'node:http';
 import process from 'node:process';
 
 const broker = process.env.BROKER ?? 'http://127.0.0.1:4180';
-const token = process.env.CLAUDE_CHANNEL_TOKEN;
+const token = process.env.CLAUDE_BROKER_TOKEN;
 const label = process.env.SESSION_LABEL;
 const port = Number(process.env.PORT ?? '4191');
 
 if (!token || !label) {
-  console.error('CLAUDE_CHANNEL_TOKEN and SESSION_LABEL are required');
+  console.error('CLAUDE_BROKER_TOKEN and SESSION_LABEL are required');
   process.exit(2);
 }
 

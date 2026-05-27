@@ -2,9 +2,9 @@ broker:
   http:
     host: 127.0.0.1
     port: 4180
-    auth_token: ${CLAUDE_CHANNEL_TOKEN}
+    auth_token: ${CLAUDE_BROKER_TOKEN}
   socket:
-    path: /tmp/claude-channel.sock
+    path: /tmp/claude-broker.sock
   defaults:
     job_ttl_sec: 300
     heartbeat_timeout_sec: 30
@@ -17,7 +17,7 @@ storage:
   job_store:
     driver: sqlite
     sqlite:
-      path: ${HOME}/.local/state/claude-channel/jobs.sqlite
+      path: ${HOME}/.local/state/claude-broker/jobs.sqlite
 
 dispatch:
   driver: inproc
@@ -27,8 +27,8 @@ logging:
   pretty: true
 
 instructions: |
-  You have access to a "claude-channel" channel. Channel events arrive as
-  <channel source="claude-channel" job_id="..." ...>...</channel> tags.
+  You have access to a "claude-broker" channel. Channel events arrive as
+  <channel source="claude-broker" job_id="..." ...>...</channel> tags.
 
   For every channel event you receive that contains a `job_id` attribute:
 

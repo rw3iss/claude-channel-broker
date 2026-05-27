@@ -2,15 +2,15 @@
 /**
  * One-shot example: submit a job and wait for the result.
  *
- *   CLAUDE_CHANNEL_TOKEN=secret BROKER=http://127.0.0.1:4180 \
+ *   CLAUDE_BROKER_TOKEN=secret BROKER=http://127.0.0.1:4180 \
  *     npx tsx examples/one-shot.ts trader-debug "Investigate slow /trade"
  */
 import process from 'node:process';
 
 const broker = process.env.BROKER ?? 'http://127.0.0.1:4180';
-const token = process.env.CLAUDE_CHANNEL_TOKEN;
+const token = process.env.CLAUDE_BROKER_TOKEN;
 if (!token) {
-  console.error('CLAUDE_CHANNEL_TOKEN is required');
+  console.error('CLAUDE_BROKER_TOKEN is required');
   process.exit(2);
 }
 

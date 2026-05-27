@@ -8,7 +8,7 @@ import { interpolateEnv } from './env.js';
 export const DEFAULT_CONFIG_PATH = path.join(
   os.homedir(),
   '.config',
-  'claude-channel',
+  'claude-broker',
   'config.yaml',
 );
 

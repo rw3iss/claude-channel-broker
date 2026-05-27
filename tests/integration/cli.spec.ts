@@ -52,7 +52,7 @@ describe('CLI integration', () => {
   let shimClient: BrokerClient;
   let port: number;
   let sock: string;
-  const env = { CLAUDE_CHANNEL_TOKEN: 'cli-test' };
+  const env = { CLAUDE_BROKER_TOKEN: 'cli-test' };
 
   beforeAll(async () => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ccb-cli-'));
@@ -64,7 +64,7 @@ broker:
   http:
     host: 127.0.0.1
     port: ${port}
-    auth_token: \${CLAUDE_CHANNEL_TOKEN}
+    auth_token: \${CLAUDE_BROKER_TOKEN}
   socket:
     path: ${sock}
   defaults:

@@ -7,7 +7,7 @@ export const HttpConfigSchema = z.object({
 });
 
 export const SocketConfigSchema = z.object({
-  path: z.string().default('/tmp/claude-channel.sock'),
+  path: z.string().default('/tmp/claude-broker.sock'),
 });
 
 export const BrokerDefaultsSchema = z.object({

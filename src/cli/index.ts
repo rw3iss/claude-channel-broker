@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import { daemonCommand } from './daemon.js';
 import { jobsCommand } from './jobs.js';
@@ -5,10 +8,23 @@ import { sessionsCommand } from './sessions.js';
 import { configCommand } from './config.js';
 import { shimCommand } from './shim.js';
 
+const PKG_VERSION = (() => {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  for (const candidate of [
+    path.resolve(here, '..', '..', '..', 'package.json'),
+    path.resolve(here, '..', '..', '..', '..', 'package.json'),
+  ]) {
+    try {
+      return JSON.parse(fs.readFileSync(candidate, 'utf8')).version as string;
+    } catch {}
+  }
+  return '0.0.0';
+})();
+
 const program = new Command()
-  .name('claude-channel')
+  .name('claude-broker')
   .description('Claude Code channel broker — long-running daemon + shim')
-  .version('0.1.0');
+  .version(PKG_VERSION);
 
 program.addCommand(daemonCommand());
 program.addCommand(shimCommand());

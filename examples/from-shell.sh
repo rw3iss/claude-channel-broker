@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Shell one-liners. Set CLAUDE_CHANNEL_TOKEN first.
+# Shell one-liners. Set CLAUDE_BROKER_TOKEN first.
 
 BROKER="${BROKER:-http://127.0.0.1:4180}"
-TOKEN="${CLAUDE_CHANNEL_TOKEN:?CLAUDE_CHANNEL_TOKEN is required}"
+TOKEN="${CLAUDE_BROKER_TOKEN:?CLAUDE_BROKER_TOKEN is required}"
 
 # Submit a job by label, return job_id only:
 submit() {

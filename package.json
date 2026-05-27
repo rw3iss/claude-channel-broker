@@ -1,11 +1,11 @@
 {
-  "name": "claude-channel-broker",
-  "version": "0.2.1",
+  "name": "claude-broker",
+  "version": "0.3.0",
   "description": "Long-running local daemon that bridges Claude Code sessions and HTTP clients via the Claude Code channels MCP protocol",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "claude-channel": "bin/claude-channel"
+    "claude-broker": "bin/claude-broker"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

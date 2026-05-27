@@ -147,11 +147,11 @@ async function buildJobStore(config: Config, clock: Clock): Promise<JobStore> {
 }
 
 function resolveMigrationsDir(): string {
-  const override = process.env.CLAUDE_CHANNEL_MIGRATIONS_DIR;
+  const override = process.env.CLAUDE_BROKER_MIGRATIONS_DIR;
   if (override) {
     if (!fs.existsSync(override)) {
       throw new Error(
-        `CLAUDE_CHANNEL_MIGRATIONS_DIR is set but does not exist: ${override}`,
+        `CLAUDE_BROKER_MIGRATIONS_DIR is set but does not exist: ${override}`,
       );
     }
     return override;
@@ -170,6 +170,6 @@ function resolveMigrationsDir(): string {
     if (fs.existsSync(c)) return c;
   }
   throw new Error(
-    `Could not locate migrations directory. Tried:\n${candidates.map((c) => `  - ${c}`).join('\n')}\nIf running from a non-standard layout, set CLAUDE_CHANNEL_MIGRATIONS_DIR.`,
+    `Could not locate migrations directory. Tried:\n${candidates.map((c) => `  - ${c}`).join('\n')}\nIf running from a non-standard layout, set CLAUDE_BROKER_MIGRATIONS_DIR.`,
   );
 }

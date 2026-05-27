@@ -56,7 +56,7 @@ export async function runShim(opts: RunShimOptions): Promise<ShimHandle> {
           return;
         case 'error':
           process.stderr.write(
-            `[claude-channel shim] broker error: ${msg.code} ${msg.message}\n`,
+            `[claude-broker shim] broker error: ${msg.code} ${msg.message}\n`,
           );
           return;
         default:

@@ -11,11 +11,11 @@ export function shimCommand(): Command {
       const { loadInstructions } = await import('../shim/load-instructions.js');
       await runShim({
         socketPath:
-          opts.socket ?? process.env.CLAUDE_CHANNEL_BROKER_SOCKET ?? '/tmp/claude-channel.sock',
+          opts.socket ?? process.env.CLAUDE_BROKER_SOCKET ?? '/tmp/claude-broker.sock',
         sessionLabel:
-          opts.sessionLabel ?? process.env.CLAUDE_CHANNEL_SESSION_LABEL ?? undefined,
+          opts.sessionLabel ?? process.env.CLAUDE_BROKER_SESSION_LABEL ?? undefined,
         sessionId:
-          opts.sessionId ?? process.env.CLAUDE_CHANNEL_SESSION_ID ?? undefined,
+          opts.sessionId ?? process.env.CLAUDE_BROKER_SESSION_ID ?? undefined,
         instructions: loadInstructions(),
       });
     });

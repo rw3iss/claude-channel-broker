@@ -7,7 +7,7 @@ import YAML from 'yaml';
 const USER_CONFIG = path.join(
   os.homedir(),
   '.config',
-  'claude-channel',
+  'claude-broker',
   'config.yaml',
 );
 
@@ -20,7 +20,7 @@ const USER_CONFIG = path.join(
  * we deliberately don't require things like `auth_token`.
  */
 export function loadInstructions(): string | undefined {
-  const envOverride = process.env.CLAUDE_CHANNEL_INSTRUCTIONS_FILE;
+  const envOverride = process.env.CLAUDE_BROKER_INSTRUCTIONS_FILE;
   const candidates = [envOverride, USER_CONFIG, ...shippedDefaultCandidates()]
     .filter(Boolean) as string[];
 

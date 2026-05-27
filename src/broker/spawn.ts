@@ -16,7 +16,7 @@ export interface SpawnHelperOptions {
   logger: Logger;
   /** Path to the `claude` binary; defaults to "claude" on PATH. */
   claudeBinary?: string;
-  /** Channel argument; default is `server:claude-channel`. */
+  /** Channel argument; default is `server:claude-broker`. */
   channelArg?: string;
   /** How long to wait for the shim to attach. */
   timeoutMs?: number;
@@ -32,7 +32,7 @@ export interface SpawnHelperOptions {
  */
 export function makeSpawnHelper(opts: SpawnHelperOptions) {
   const claudeBinary = opts.claudeBinary ?? 'claude';
-  const channelArg = opts.channelArg ?? 'server:claude-channel';
+  const channelArg = opts.channelArg ?? 'server:claude-broker';
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const pollIntervalMs = opts.pollIntervalMs ?? 250;
 
@@ -42,7 +42,7 @@ export function makeSpawnHelper(opts: SpawnHelperOptions) {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       ...(input.env ?? {}),
-      CLAUDE_CHANNEL_SESSION_LABEL: input.label,
+      CLAUDE_BROKER_SESSION_LABEL: input.label,
     };
 
     const child = spawn(

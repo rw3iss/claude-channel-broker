@@ -10,7 +10,7 @@ import { startBroker } from '../broker/broker.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PID_FILE_DEFAULT = path.join(
   process.env.XDG_RUNTIME_DIR || os.tmpdir(),
-  'claude-channel.pid',
+  'claude-broker.pid',
 );
 
 export function daemonCommand(): Command {
@@ -26,7 +26,7 @@ export function daemonCommand(): Command {
       if (opts.detach) {
         // Re-exec ourselves without --detach, detached.
         const args = process.argv.slice(2).filter((a) => a !== '--detach');
-        const out = fs.openSync(path.join(os.tmpdir(), 'claude-channel.log'), 'a');
+        const out = fs.openSync(path.join(os.tmpdir(), 'claude-broker.log'), 'a');
         const child = spawn(process.execPath, [process.argv[1], ...args], {
           detached: true,
           stdio: ['ignore', out, out],

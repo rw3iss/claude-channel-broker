@@ -1,4 +1,4 @@
-# CLAUDE.md — claude-channel-broker
+# CLAUDE.md — claude-broker
 
 ## What this repo is
 

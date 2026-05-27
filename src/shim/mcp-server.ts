@@ -29,7 +29,7 @@ export interface ShimMcpServer {
 export function buildShimMcpServer(opts: McpServerOptions): ShimMcpServer {
   const server = new Server(
     {
-      name: opts.serverName ?? 'claude-channel',
+      name: opts.serverName ?? 'claude-broker',
       version: opts.serverVersion ?? '0.1.0',
     },
     {

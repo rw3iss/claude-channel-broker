@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# claude-channel installer
+# claude-broker installer
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash -s -- --update
+#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash -s -- --update
 #
 # Flags:
 #   --update           Pull the latest source in an existing install and rebuild.
-#   --prefix DIR       Override install prefix (default: ~/.local/share/claude-channel).
+#   --prefix DIR       Override install prefix (default: ~/.local/share/claude-broker).
 #   --bin-dir DIR      Override bin symlink dir (default: ~/.local/bin).
 #   --ref REF          Git ref to check out (branch / tag / SHA). Default: main.
 #   --repo URL         Override source git URL.
@@ -16,16 +16,16 @@
 
 set -euo pipefail
 
-REPO_URL_DEFAULT="https://github.com/rw3iss/claude-channel-broker.git"
-PREFIX_DEFAULT="${HOME}/.local/share/claude-channel"
+REPO_URL_DEFAULT="https://github.com/rw3iss/claude-broker.git"
+PREFIX_DEFAULT="${HOME}/.local/share/claude-broker"
 BIN_DIR_DEFAULT="${HOME}/.local/bin"
 REF_DEFAULT="main"
 
 UPDATE=0
-PREFIX="${CLAUDE_CHANNEL_PREFIX:-$PREFIX_DEFAULT}"
-BIN_DIR="${CLAUDE_CHANNEL_BIN_DIR:-$BIN_DIR_DEFAULT}"
-REF="${CLAUDE_CHANNEL_REF:-$REF_DEFAULT}"
-REPO_URL="${CLAUDE_CHANNEL_REPO:-$REPO_URL_DEFAULT}"
+PREFIX="${CLAUDE_BROKER_PREFIX:-$PREFIX_DEFAULT}"
+BIN_DIR="${CLAUDE_BROKER_BIN_DIR:-$BIN_DIR_DEFAULT}"
+REF="${CLAUDE_BROKER_REF:-$REF_DEFAULT}"
+REPO_URL="${CLAUDE_BROKER_REPO:-$REPO_URL_DEFAULT}"
 
 usage() {
   awk '/^#!/{next} /^[^#]/{exit} {sub(/^# ?/, ""); print}' "$0"
@@ -104,8 +104,8 @@ esac
 log "building"
 ( cd "$PREFIX" && $PKG_MGR run build )
 
-LINK_TARGET="$PREFIX/bin/claude-channel"
-LINK_PATH="$BIN_DIR/claude-channel"
+LINK_TARGET="$PREFIX/bin/claude-broker"
+LINK_PATH="$BIN_DIR/claude-broker"
 [ -x "$LINK_TARGET" ] || chmod +x "$LINK_TARGET" 2>/dev/null || true
 
 if [ -L "$LINK_PATH" ] || [ -e "$LINK_PATH" ]; then
@@ -123,7 +123,7 @@ esac
 
 cat <<EOF
 
-  claude-channel v${INSTALLED_VERSION} installed.
+  claude-broker v${INSTALLED_VERSION} installed.
 
   Source:    $PREFIX
   Binary:    $LINK_PATH
@@ -141,13 +141,13 @@ fi
 
 cat <<'EOF'
   Next steps:
-    1. claude-channel daemon start
+    1. claude-broker daemon start
     2. Add this to ~/.claude.json (or your project .mcp.json):
-         {"mcpServers":{"claude-channel":{"command":"claude-channel","args":["shim"]}}}
+         {"mcpServers":{"claude-broker":{"command":"claude-broker","args":["shim"]}}}
     3. Launch Claude Code with:
-         claude --dangerously-load-development-channels server:claude-channel
+         claude --dangerously-load-development-channels server:claude-broker
 
   Update later with:
-    curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash -s -- --update
+    curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash -s -- --update
 
 EOF

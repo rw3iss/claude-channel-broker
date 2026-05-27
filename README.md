@@ -1,4 +1,4 @@
-# claude-channel
+# claude-broker
 
 Claude Channel Broker is a long-running local daemon that lets any local
 process send work to a Claude Code session and receive structured results
@@ -11,17 +11,17 @@ an HTTP API.
 One line:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash
 ```
 
 Update an existing install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash -s -- --update
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash -s -- --update
 ```
 
-The installer clones into `~/.local/share/claude-channel`, builds, and symlinks
-`claude-channel` into `~/.local/bin`. Override with `--prefix`, `--bin-dir`,
+The installer clones into `~/.local/share/claude-broker`, builds, and symlinks
+`claude-broker` into `~/.local/bin`. Override with `--prefix`, `--bin-dir`,
 `--ref`, or `--repo`; run with `--help` for the full list.
 
 For a manual install from a working tree, see [Development](#development).
@@ -30,20 +30,20 @@ For a manual install from a working tree, see [Development](#development).
 
 ```bash
 # 1. Install
-curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash
 
 # 2. Start the broker
-claude-channel daemon start
+claude-broker daemon start
 
 # 3. Configure your Claude Code session (~/.claude.json):
-#    {"mcpServers":{"claude-channel":{"command":"claude-channel","args":["shim"]}}}
+#    {"mcpServers":{"claude-broker":{"command":"claude-broker","args":["shim"]}}}
 
 # 4. Start a Claude session with the channel enabled:
-claude --dangerously-load-development-channels server:claude-channel
+claude --dangerously-load-development-channels server:claude-broker
 
 # 5. From anywhere:
 curl -X POST localhost:4180/jobs \
-  -H "Authorization: Bearer $CLAUDE_CHANNEL_TOKEN" \
+  -H "Authorization: Bearer $CLAUDE_BROKER_TOKEN" \
   -d '{"session_label":"default","content":"What time is it?"}'
 ```
 
@@ -71,16 +71,16 @@ curl -X POST localhost:4180/jobs \
 
 ## Configuration
 
-The broker reads YAML from `~/.config/claude-channel/config.yaml`
+The broker reads YAML from `~/.config/claude-broker/config.yaml`
 (overridable with `--config`). A minimal example:
 
 ```yaml
 broker:
   http:
     port: 4180
-    auth_token: ${CLAUDE_CHANNEL_TOKEN}
+    auth_token: ${CLAUDE_BROKER_TOKEN}
   socket:
-    path: /tmp/claude-channel.sock
+    path: /tmp/claude-broker.sock
 ```
 
 Full schema and defaults are in `config/default.yaml`.
@@ -105,11 +105,11 @@ See [docs/architecture.md](./docs/architecture.md) for full schemas.
 ## CLI
 
 ```
-claude-channel daemon {start,stop,status}
-claude-channel shim                          # used by Claude Code's MCP config
-claude-channel jobs {list,get,submit,cancel}
-claude-channel sessions {list,get,spawn,kill}
-claude-channel config {validate,show}
+claude-broker daemon {start,stop,status}
+claude-broker shim                          # used by Claude Code's MCP config
+claude-broker jobs {list,get,submit,cancel}
+claude-broker sessions {list,get,spawn,kill}
+claude-broker config {validate,show}
 ```
 
 ## Examples
