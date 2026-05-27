@@ -11,13 +11,13 @@ an HTTP API.
 One line:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash
 ```
 
 Update an existing install:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash -s -- --update
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash -s -- --update
 ```
 
 The installer clones into `~/.local/share/claude-channel`, builds, and symlinks
@@ -30,7 +30,7 @@ For a manual install from a working tree, see [Development](#development).
 
 ```bash
 # 1. Install
-curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash
 
 # 2. Start the broker
 claude-channel daemon start

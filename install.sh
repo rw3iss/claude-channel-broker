@@ -3,8 +3,8 @@
 # claude-channel installer
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash -s -- --update
+#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash -s -- --update
 #
 # Flags:
 #   --update           Pull the latest source in an existing install and rebuild.
@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-REPO_URL_DEFAULT="https://github.com/rw3iss/claude-channels.git"
+REPO_URL_DEFAULT="https://github.com/rw3iss/claude-channel-broker.git"
 PREFIX_DEFAULT="${HOME}/.local/share/claude-channel"
 BIN_DIR_DEFAULT="${HOME}/.local/bin"
 REF_DEFAULT="main"
@@ -148,6 +148,6 @@ cat <<'EOF'
          claude --dangerously-load-development-channels server:claude-channel
 
   Update later with:
-    curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash -s -- --update
+    curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channel-broker/main/install.sh | bash -s -- --update
 
 EOF
