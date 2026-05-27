@@ -1,6 +1,6 @@
 {
   "name": "claude-channel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Long-running local daemon that bridges Claude Code sessions and HTTP clients via the Claude Code channels MCP protocol",
   "license": "MIT",
   "type": "module",

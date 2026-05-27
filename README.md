@@ -6,13 +6,31 @@ back. It uses the Claude Code [channels MCP
 protocol](https://code.claude.com/docs/en/channels-reference) and exposes
 an HTTP API.
 
+## Install
+
+One line:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash
+```
+
+Update an existing install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash -s -- --update
+```
+
+The installer clones into `~/.local/share/claude-channel`, builds, and symlinks
+`claude-channel` into `~/.local/bin`. Override with `--prefix`, `--bin-dir`,
+`--ref`, or `--repo`; run with `--help` for the full list.
+
+For a manual install from a working tree, see [Development](#development).
+
 ## 30-second demo
 
 ```bash
-# 1. Install (from this repo, while it's pre-publish)
-pnpm install
-pnpm build
-npm link
+# 1. Install
+curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash
 
 # 2. Start the broker
 claude-channel daemon start

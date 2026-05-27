@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+#
+# claude-channel installer
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash -s -- --update
+#
+# Flags:
+#   --update           Pull the latest source in an existing install and rebuild.
+#   --prefix DIR       Override install prefix (default: ~/.local/share/claude-channel).
+#   --bin-dir DIR      Override bin symlink dir (default: ~/.local/bin).
+#   --ref REF          Git ref to check out (branch / tag / SHA). Default: main.
+#   --repo URL         Override source git URL.
+#   -h, --help         Show this help.
+
+set -euo pipefail
+
+REPO_URL_DEFAULT="https://github.com/rw3iss/claude-channels.git"
+PREFIX_DEFAULT="${HOME}/.local/share/claude-channel"
+BIN_DIR_DEFAULT="${HOME}/.local/bin"
+REF_DEFAULT="main"
+
+UPDATE=0
+PREFIX="${CLAUDE_CHANNEL_PREFIX:-$PREFIX_DEFAULT}"
+BIN_DIR="${CLAUDE_CHANNEL_BIN_DIR:-$BIN_DIR_DEFAULT}"
+REF="${CLAUDE_CHANNEL_REF:-$REF_DEFAULT}"
+REPO_URL="${CLAUDE_CHANNEL_REPO:-$REPO_URL_DEFAULT}"
+
+usage() {
+  awk '/^#!/{next} /^[^#]/{exit} {sub(/^# ?/, ""); print}' "$0"
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --update) UPDATE=1; shift ;;
+    --prefix) PREFIX="$2"; shift 2 ;;
+    --bin-dir) BIN_DIR="$2"; shift 2 ;;
+    --ref) REF="$2"; shift 2 ;;
+    --repo) REPO_URL="$2"; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown option: $1" >&2; usage; exit 2 ;;
+  esac
+done
+
+log() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33mwarn:\033[0m %s\n' "$*" >&2; }
+die() { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+need git
+need node
+
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
+if [ "${NODE_MAJOR}" -lt 20 ]; then
+  die "node 20+ required (found $(node -v 2>/dev/null || echo none))"
+fi
+
+PKG_MGR=""
+if command -v pnpm >/dev/null 2>&1; then
+  PKG_MGR="pnpm"
+elif command -v npm >/dev/null 2>&1; then
+  PKG_MGR="npm"
+else
+  die "neither pnpm nor npm found on PATH"
+fi
+
+mkdir -p "$(dirname "$PREFIX")" "$BIN_DIR"
+
+if [ -d "$PREFIX/.git" ]; then
+  if [ "$UPDATE" -eq 1 ]; then
+    log "updating $PREFIX (ref: $REF)"
+    git -C "$PREFIX" fetch --tags --prune origin
+    git -C "$PREFIX" checkout "$REF"
+    # If on a branch, fast-forward; for detached tags/SHAs this is a no-op.
+    if git -C "$PREFIX" symbolic-ref -q HEAD >/dev/null; then
+      git -C "$PREFIX" pull --ff-only origin "$REF"
+    fi
+  else
+    die "$PREFIX already exists. Re-run with --update to refresh, or pass --prefix to install elsewhere."
+  fi
+else
+  if [ "$UPDATE" -eq 1 ]; then
+    die "--update passed but no existing install at $PREFIX"
+  fi
+  log "cloning $REPO_URL → $PREFIX"
+  git clone --depth 1 --branch "$REF" "$REPO_URL" "$PREFIX" 2>/dev/null \
+    || git clone "$REPO_URL" "$PREFIX"
+  if [ "$REF" != "main" ]; then
+    git -C "$PREFIX" checkout "$REF"
+  fi
+fi
+
+log "installing dependencies with $PKG_MGR"
+case "$PKG_MGR" in
+  pnpm) ( cd "$PREFIX" && pnpm install --prod=false --frozen-lockfile 2>/dev/null \
+            || pnpm install --prod=false ) ;;
+  npm)  ( cd "$PREFIX" && npm install --no-audit --no-fund ) ;;
+esac
+
+log "building"
+( cd "$PREFIX" && $PKG_MGR run build )
+
+LINK_TARGET="$PREFIX/bin/claude-channel"
+LINK_PATH="$BIN_DIR/claude-channel"
+[ -x "$LINK_TARGET" ] || chmod +x "$LINK_TARGET" 2>/dev/null || true
+
+if [ -L "$LINK_PATH" ] || [ -e "$LINK_PATH" ]; then
+  rm -f "$LINK_PATH"
+fi
+ln -s "$LINK_TARGET" "$LINK_PATH"
+log "symlinked $LINK_PATH → $LINK_TARGET"
+
+INSTALLED_VERSION="$(node -p "require('$PREFIX/package.json').version" 2>/dev/null || echo unknown)"
+
+case ":$PATH:" in
+  *":$BIN_DIR:"*) ON_PATH=1 ;;
+  *) ON_PATH=0 ;;
+esac
+
+cat <<EOF
+
+  claude-channel v${INSTALLED_VERSION} installed.
+
+  Source:    $PREFIX
+  Binary:    $LINK_PATH
+
+EOF
+
+if [ "$ON_PATH" -eq 0 ]; then
+  cat <<EOF
+  $BIN_DIR is not on your PATH. Add this to your shell profile:
+
+    export PATH="$BIN_DIR:\$PATH"
+
+EOF
+fi
+
+cat <<'EOF'
+  Next steps:
+    1. claude-channel daemon start
+    2. Add this to ~/.claude.json (or your project .mcp.json):
+         {"mcpServers":{"claude-channel":{"command":"claude-channel","args":["shim"]}}}
+    3. Launch Claude Code with:
+         claude --dangerously-load-development-channels server:claude-channel
+
+  Update later with:
+    curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-channels/main/install.sh | bash -s -- --update
+
+EOF
