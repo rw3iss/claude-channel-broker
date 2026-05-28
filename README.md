@@ -14,6 +14,8 @@ HTTP clients ──▶ broker (daemon) ──unix socket──▶ shim ──std
 - **session** — an attached Claude session, addressed by id or label.
 - **job** — one request to a session: `pending → dispatched → in_progress → completed | failed | cancelled | expired | orphaned`.
 
+For a protocol-level walkthrough (HTTP → unix socket → MCP → Claude, end-to-end), see [docs/how-it-works.md](./docs/how-it-works.md).
+
 ## Requirements
 
 - Claude Code v2.1.80+
@@ -53,13 +55,22 @@ One-liner installer (clones, builds, symlinks `claude-broker` into `~/.local/bin
 curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash
 ```
 
-Update an existing install:
+Update an existing install — easiest way:
+
+```bash
+claude-broker update
+```
+
+This re-runs the local `install.sh --update` (git fetch + rebuild) without
+needing to remember the curl URL. Pass `--remote` to re-fetch the installer
+from GitHub instead. Equivalent long form:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rw3iss/claude-broker/main/install.sh | bash -s -- --update
 ```
 
-Flags: `--prefix`, `--bin-dir`, `--ref`, `--repo`. Run with `--help` for all options.
+Installer flags: `--prefix`, `--bin-dir`, `--ref`, `--repo`. Same names work
+on `claude-broker update`. Run with `--help` for all options.
 For a manual install from a working tree see [Development](#development).
 
 ## Daemon
@@ -342,6 +353,7 @@ claude-broker shim                          # invoked by Claude Code's MCP confi
 claude-broker jobs {list,get,submit,cancel}
 claude-broker sessions {list,get,spawn,kill}
 claude-broker config {validate,show}
+claude-broker update [--ref REF] [--remote] # git-pull + rebuild this install
 ```
 
 ## Examples
@@ -359,8 +371,10 @@ pnpm dev          # broker in foreground with file watch
 pnpm typecheck
 ```
 
-Adding a new adapter: [docs/adapters.md](./docs/adapters.md).
-Architecture deep-dive: [docs/architecture.md](./docs/architecture.md).
+- [docs/how-it-works.md](./docs/how-it-works.md) — protocol walkthrough across all three legs (HTTP, unix socket, MCP).
+- [docs/architecture.md](./docs/architecture.md) — module boundaries and SOLID accountability.
+- [docs/adapters.md](./docs/adapters.md) — write a new `JobStore` or `JobDispatcher`.
+- [docs/operations.md](./docs/operations.md) — systemd, log rotation, backup.
 
 ## Troubleshooting
 

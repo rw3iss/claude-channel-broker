@@ -7,6 +7,7 @@ import { jobsCommand } from './jobs.js';
 import { sessionsCommand } from './sessions.js';
 import { configCommand } from './config.js';
 import { shimCommand } from './shim.js';
+import { updateCommand } from './update.js';
 
 const PKG_VERSION = (() => {
   const here = path.dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,7 @@ program.addCommand(shimCommand());
 program.addCommand(jobsCommand());
 program.addCommand(sessionsCommand());
 program.addCommand(configCommand());
+program.addCommand(updateCommand());
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err instanceof Error ? err.message : String(err));
