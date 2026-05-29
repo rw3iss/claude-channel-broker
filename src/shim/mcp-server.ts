@@ -5,10 +5,10 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { BrokerClient } from './broker-client.js';
-import { DEFAULT_TOOLS } from './tool-handlers.js';
+import { DEFAULT_TOOLS } from '../broker/tools.js';
 
-export { DEFAULT_TOOLS } from './tool-handlers.js';
-export type { ToolDef } from './tool-handlers.js';
+export { DEFAULT_TOOLS } from '../broker/tools.js';
+export type { ToolDef, ToolName } from '../broker/tools.js';
 
 const CHANNEL_NOTIFICATION_METHOD = 'notifications/claude/channel';
 

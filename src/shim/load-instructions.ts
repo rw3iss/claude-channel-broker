@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
+import { combineInstructions } from '../lib/instructions.js';
 
 const USER_CONFIG = path.join(
   os.homedir(),
@@ -32,10 +33,8 @@ export function loadInstructions(): string | undefined {
         instructions?: string;
         instructions_append?: string;
       };
-      const base = parsed.instructions?.trim();
-      if (!base) continue;
-      const extra = parsed.instructions_append?.trim();
-      return extra ? `${base}\n\n${extra}` : base;
+      if (!parsed.instructions?.trim()) continue;
+      return combineInstructions(parsed.instructions, parsed.instructions_append);
     } catch {
       // Bad YAML — try the next candidate.
     }

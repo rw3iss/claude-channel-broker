@@ -118,10 +118,13 @@ MCP sends a `tools/call` request to the shim. `src/shim/mcp-server.ts`
 registers a `CallToolRequestSchema` handler that forwards every call back
 over the unix socket as a `toolCall`, and awaits the matching `toolResult`.
 
-The broker's `SocketServer.dispatchToolCall` (`src/broker/socket-server.ts`)
-translates the call into a `JobService` method (`complete`, `fail`,
+`SocketServer.handleToolCall` (`src/broker/socket-server.ts`) hands the call
+to `dispatchTool` (`src/broker/tool-router.ts`), whose `Record<ToolName, …>`
+handler map translates it into a `JobService` method (`complete`, `fail`,
 `noteProgress`, `ack`), which transitions the job in the DB and publishes
-on the SSE bus.
+on the SSE bus. The tool schemas the shim advertises live in
+`src/broker/tools.ts`, so the schema list and the routing share one
+`ToolName` source of truth.
 
 ## End-to-end: `claude-broker jobs submit --session-label trader --wait`
 

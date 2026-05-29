@@ -1,13 +1,21 @@
 /**
- * Tool definitions the shim exposes to Claude. Adding a new tool here:
- *   1. Append it to `DEFAULT_TOOLS`.
- *   2. Add a matching `case` to `SocketServer.dispatchToolCall` in
- *      src/broker/socket-server.ts so the broker knows how to route it.
- *   3. Update the instructions in config/default.yaml so Claude knows
- *      when to call it.
+ * The channel tool contract — the tools the shim exposes to Claude over MCP,
+ * and the names the broker routes. Lives in `broker/` (like `wire.ts`) because
+ * it is shared protocol: the shim reaches in for the schemas, the broker's
+ * tool-router keys its handlers off `ToolName`.
+ *
+ * `ToolName` is the single source of truth for which tools exist. Adding one:
+ *   1. Add its name to `ToolName` and an entry to `DEFAULT_TOOLS`.
+ *   2. Add a handler to `TOOL_HANDLERS` in `tool-router.ts` — its
+ *      `Record<ToolName, …>` type fails to compile until you do, so the
+ *      schema list and the routing can't drift.
+ *   3. Update the instructions in `config/default.yaml` so Claude knows when
+ *      to call it.
  */
+export type ToolName = 'complete_job' | 'fail_job' | 'note_progress' | 'ack_job';
+
 export interface ToolDef {
-  name: string;
+  name: ToolName;
   description: string;
   inputSchema: object;
 }

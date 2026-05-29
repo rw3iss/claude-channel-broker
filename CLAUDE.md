@@ -52,8 +52,10 @@ the Claude Code "channels" MCP protocol. Two processes:
 - New endpoints: add schema in `src/broker/schemas.ts`, route in
   `src/broker/http-server.ts`, integration test in
   `tests/integration/http.spec.ts`.
-- New tool the shim exposes: register in `src/shim/tool-handlers.ts`,
-  update the default instructions text in `config/default.yaml`,
+- New tool the shim exposes: add the name to `ToolName` + a schema to
+  `DEFAULT_TOOLS` in `src/broker/tools.ts`, add a handler to `TOOL_HANDLERS`
+  in `src/broker/tool-router.ts` (the `Record<ToolName, …>` type enforces
+  parity), update the default instructions text in `config/default.yaml`,
   document in README "Tools" section.
 - New adapter: file under `src/adapters/<kind>/<name>.ts`, register
   in `src/lib/container.ts`, add to the contract test parameterization,

@@ -3,11 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../lib/config.js';
 import { startBroker } from '../broker/broker.js';
+import { withConfigOption } from './client.js';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
 const PID_FILE_DEFAULT = path.join(
   process.env.XDG_RUNTIME_DIR || os.tmpdir(),
   'claude-broker.pid',
@@ -16,13 +15,13 @@ const PID_FILE_DEFAULT = path.join(
 export function daemonCommand(): Command {
   const cmd = new Command('daemon').description('Manage the long-running broker process');
 
-  cmd
-    .command('start')
-    .description('Start the broker in the foreground (or --detach to background)')
-    .option('-c, --config <path>', 'path to config file')
-    .option('--detach', 'fork into background and write a pidfile', false)
-    .option('--pidfile <path>', 'pidfile path', PID_FILE_DEFAULT)
-    .action(async (opts: { config?: string; detach?: boolean; pidfile?: string }) => {
+  withConfigOption(
+    cmd
+      .command('start')
+      .description('Start the broker in the foreground (or --detach to background)')
+      .option('--detach', 'fork into background and write a pidfile', false)
+      .option('--pidfile <path>', 'pidfile path', PID_FILE_DEFAULT),
+  ).action(async (opts: { config?: string; detach?: boolean; pidfile?: string }) => {
       if (opts.detach) {
         // Re-exec ourselves without --detach, detached.
         const args = process.argv.slice(2).filter((a) => a !== '--detach');
@@ -92,11 +91,11 @@ export function daemonCommand(): Command {
       }
     });
 
-  cmd
-    .command('status')
-    .description('Query the broker via its /healthz endpoint')
-    .option('-c, --config <path>', 'path to config file')
-    .action(async (opts: { config?: string }) => {
+  withConfigOption(
+    cmd
+      .command('status')
+      .description('Query the broker via its /healthz endpoint'),
+  ).action(async (opts: { config?: string }) => {
       const config = loadConfig({ path: opts.config });
       const url = `http://${config.broker.http.host}:${config.broker.http.port}/healthz`;
       try {
@@ -114,5 +113,3 @@ export function daemonCommand(): Command {
 
   return cmd;
 }
-
-void here;

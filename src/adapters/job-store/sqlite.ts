@@ -19,6 +19,7 @@ import {
   runMigrations,
   type MigrationFile,
 } from '../../lib/migrate.js';
+import { toIso } from '../../lib/time.js';
 
 export interface SqliteJobStoreOptions {
   path: string;
@@ -80,7 +81,7 @@ export class SqliteJobStore implements JobStore {
 
   async insert(job: NewJob): Promise<Job> {
     const history: JobHistoryEntry[] = [
-      { at: isoFromMs(job.created_at), from: null, to: 'pending' },
+      { at: toIso(job.created_at), from: null, to: 'pending' },
     ];
     const row: Row = {
       id: job.id,
@@ -135,7 +136,7 @@ export class SqliteJobStore implements JobStore {
 
       const history = JSON.parse(existing.history_json) as JobHistoryEntry[];
       history.push({
-        at: isoFromMs(at),
+        at: toIso(at),
         from: existing.status as JobStatus,
         to,
       });
@@ -351,8 +352,4 @@ function rowToJob(row: Row): Job {
     completed_at: row.completed_at,
     expires_at: row.expires_at,
   };
-}
-
-function isoFromMs(ms: number): string {
-  return new Date(ms).toISOString();
 }

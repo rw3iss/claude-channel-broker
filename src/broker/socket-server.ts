@@ -16,6 +16,7 @@ import {
   type ShimToBrokerMessage,
   type ShimToolCallMessage,
 } from './wire.js';
+import { dispatchTool } from './tool-router.js';
 
 interface Connection {
   id: string;
@@ -243,28 +244,9 @@ export class SocketServer implements DispatchSink {
       this.sendError(conn, 'already_registered', 'register sent twice');
       return;
     }
-    conn.sessionId = msg.sessionId;
-    // If another connection claimed this session id, detach it; the new
-    // connection wins.
-    const prior = this.sessionConn.get(msg.sessionId);
-    if (prior && prior !== conn.id) {
-      const priorConn = this.connections.get(prior);
-      if (priorConn) {
-        priorConn.socket.end();
-        this.connections.delete(prior);
-      }
-    }
-    this.sessionConn.set(msg.sessionId, conn.id);
-    this.sessions.register({
-      id: msg.sessionId,
+    this.attachSession(conn, msg.sessionId, {
       label: msg.label ?? null,
       pid: msg.pid ?? null,
-      transport: conn,
-    });
-    this.sendMessage(conn, {
-      v: WIRE_VERSION,
-      type: 'registered',
-      sessionId: msg.sessionId,
     });
   }
 
@@ -272,10 +254,27 @@ export class SocketServer implements DispatchSink {
     conn: Connection,
     msg: ShimToBrokerMessage & { type: 'reconnect' },
   ): Promise<void> {
-    // Same as register — reconnect is a soft alias. inFlightJobIds is
-    // recorded but the broker's JobStore is the source of truth.
-    conn.sessionId = msg.sessionId;
-    const prior = this.sessionConn.get(msg.sessionId);
+    // Reconnect is a soft alias for register. inFlightJobIds is recorded for
+    // observability, but the broker's JobStore is the source of truth.
+    this.attachSession(conn, msg.sessionId);
+    this.logger.info(
+      { sessionId: msg.sessionId, inFlight: msg.inFlightJobIds?.length ?? 0 },
+      'shim reconnected',
+    );
+  }
+
+  /**
+   * Bind a connection to a session id: evict any prior connection holding
+   * that id (the new connection wins), record the mapping, register the
+   * session, and ack with `registered`.
+   */
+  private attachSession(
+    conn: Connection,
+    sessionId: string,
+    extra?: { label?: string | null; pid?: number | null },
+  ): void {
+    conn.sessionId = sessionId;
+    const prior = this.sessionConn.get(sessionId);
     if (prior && prior !== conn.id) {
       const priorConn = this.connections.get(prior);
       if (priorConn) {
@@ -283,17 +282,13 @@ export class SocketServer implements DispatchSink {
         this.connections.delete(prior);
       }
     }
-    this.sessionConn.set(msg.sessionId, conn.id);
-    this.sessions.register({ id: msg.sessionId, transport: conn });
+    this.sessionConn.set(sessionId, conn.id);
+    this.sessions.register({ id: sessionId, transport: conn, ...extra });
     this.sendMessage(conn, {
       v: WIRE_VERSION,
       type: 'registered',
-      sessionId: msg.sessionId,
+      sessionId,
     });
-    this.logger.info(
-      { sessionId: msg.sessionId, inFlight: msg.inFlightJobIds?.length ?? 0 },
-      'shim reconnected',
-    );
   }
 
   private async handleToolCall(
@@ -307,46 +302,13 @@ export class SocketServer implements DispatchSink {
     conn.toolCallIds.add(msg.id);
     const ctx = { sessionId: conn.sessionId };
     try {
-      const result = await this.dispatchToolCall(msg.name, msg.args, ctx);
+      const result = await dispatchTool(this.service, msg.name, msg.args, ctx);
       this.sendToolResult(conn, msg.id, result);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       this.sendToolResult(conn, msg.id, undefined, message);
     } finally {
       conn.toolCallIds.delete(msg.id);
-    }
-  }
-
-  private async dispatchToolCall(
-    name: string,
-    args: Record<string, unknown>,
-    ctx: { sessionId: string },
-  ): Promise<unknown> {
-    const jobId = typeof args.job_id === 'string' ? args.job_id : null;
-    if (!jobId) throw new Error('job_id is required');
-    switch (name) {
-      case 'complete_job': {
-        const job = await this.service.complete(jobId, args.result, ctx);
-        return { ok: true, status: job.status };
-      }
-      case 'fail_job': {
-        const error =
-          typeof args.error === 'string' ? args.error : JSON.stringify(args.error);
-        const job = await this.service.fail(jobId, error, ctx);
-        return { ok: true, status: job.status };
-      }
-      case 'note_progress': {
-        const note =
-          typeof args.note === 'string' ? args.note : JSON.stringify(args.note);
-        const job = await this.service.noteProgress(jobId, note, ctx);
-        return { ok: true, status: job.status };
-      }
-      case 'ack_job': {
-        const job = await this.service.ack(jobId, ctx);
-        return { ok: true, status: job.status };
-      }
-      default:
-        throw new Error(`unknown tool: ${name}`);
     }
   }
 

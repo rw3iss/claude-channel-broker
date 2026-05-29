@@ -11,6 +11,7 @@ import type { SessionRegistry } from './session-registry.js';
 import type { SseBus } from './sse-bus.js';
 import type { Authenticator } from './auth.js';
 import { DomainError, UnauthorizedError } from '../lib/errors.js';
+import { toIso, toIsoOrNull } from '../lib/time.js';
 import {
   CommentBodySchema,
   ListJobsQuerySchema,
@@ -346,10 +347,10 @@ function serializeJob(job: Job): Record<string, unknown> {
     error: job.error,
     progress_notes: job.progress_notes,
     history: job.history,
-    created_at: new Date(job.created_at).toISOString(),
-    dispatched_at: job.dispatched_at ? new Date(job.dispatched_at).toISOString() : null,
-    completed_at: job.completed_at ? new Date(job.completed_at).toISOString() : null,
-    expires_at: new Date(job.expires_at).toISOString(),
+    created_at: toIso(job.created_at),
+    dispatched_at: toIsoOrNull(job.dispatched_at),
+    completed_at: toIsoOrNull(job.completed_at),
+    expires_at: toIso(job.expires_at),
   };
 }
 
@@ -368,8 +369,8 @@ function serializeSession(s: {
     status: s.status,
     pid: s.pid,
     metadata: s.metadata,
-    registered_at: new Date(s.registeredAt).toISOString(),
-    last_heartbeat_at: new Date(s.lastHeartbeatAt).toISOString(),
+    registered_at: toIso(s.registeredAt),
+    last_heartbeat_at: toIso(s.lastHeartbeatAt),
   };
 }
 

@@ -18,6 +18,7 @@ import {
   ValidationError,
 } from '../lib/errors.js';
 import { jobId as makeJobId } from '../lib/ids.js';
+import { toIso } from '../lib/time.js';
 import type { SessionRegistry } from './session-registry.js';
 import type { SseBus } from './sse-bus.js';
 
@@ -161,26 +162,9 @@ export class JobService {
   }
 
   async cancel(jobId: string): Promise<Job> {
-    const existing = await this.store.get(jobId);
-    if (!existing) throw new NotFoundError('job', jobId);
-    if (TERMINAL_STATUSES.has(existing.status)) {
-      throw new ConflictError(
-        `cannot cancel job in terminal state: ${existing.status}`,
-      );
-    }
-    const updated = await this.store.transitionStatus(
-      jobId,
-      existing.status,
-      'cancelled',
-      {},
-      this.clock.now(),
-    );
-    if (!updated) {
-      throw new ConflictError('job state changed under us; retry');
-    }
-    this.publish('job.cancelled', updated);
-    await this.dispatcher.notifyDone(updated.session_id, updated.id);
-    return updated;
+    return this.transitionToTerminal(jobId, 'cancelled', 'job.cancelled', {
+      verb: 'cancel',
+    });
   }
 
   /** Tool call: complete_job({ job_id, result }) */
@@ -189,26 +173,10 @@ export class JobService {
     result: unknown,
     _ctx: ToolCallContext,
   ): Promise<Job> {
-    const existing = await this.store.get(jobId);
-    if (!existing) throw new NotFoundError('job', jobId);
-    if (TERMINAL_STATUSES.has(existing.status)) {
-      throw new ConflictError(
-        `cannot complete job in terminal state: ${existing.status}`,
-      );
-    }
-    const updated = await this.store.transitionStatus(
-      jobId,
-      existing.status,
-      'completed',
-      { result },
-      this.clock.now(),
-    );
-    if (!updated) {
-      throw new ConflictError('job state changed under us; retry');
-    }
-    this.publish('job.completed', updated);
-    await this.dispatcher.notifyDone(updated.session_id, updated.id);
-    return updated;
+    return this.transitionToTerminal(jobId, 'completed', 'job.completed', {
+      verb: 'complete',
+      patch: { result },
+    });
   }
 
   /** Tool call: fail_job({ job_id, error }) */
@@ -217,26 +185,10 @@ export class JobService {
     error: string,
     _ctx: ToolCallContext,
   ): Promise<Job> {
-    const existing = await this.store.get(jobId);
-    if (!existing) throw new NotFoundError('job', jobId);
-    if (TERMINAL_STATUSES.has(existing.status)) {
-      throw new ConflictError(
-        `cannot fail job in terminal state: ${existing.status}`,
-      );
-    }
-    const updated = await this.store.transitionStatus(
-      jobId,
-      existing.status,
-      'failed',
-      { error },
-      this.clock.now(),
-    );
-    if (!updated) {
-      throw new ConflictError('job state changed under us; retry');
-    }
-    this.publish('job.failed', updated);
-    await this.dispatcher.notifyDone(updated.session_id, updated.id);
-    return updated;
+    return this.transitionToTerminal(jobId, 'failed', 'job.failed', {
+      verb: 'fail',
+      patch: { error },
+    });
   }
 
   /** Tool call: note_progress({ job_id, note }) */
@@ -255,7 +207,7 @@ export class JobService {
     const now = this.clock.now();
     const next = [
       ...existing.progress_notes,
-      { at: new Date(now).toISOString(), note },
+      { at: toIso(now), note },
     ];
 
     // Bump to in_progress if it was still 'dispatched' — first progress note
@@ -311,7 +263,7 @@ export class JobService {
     const now = this.clock.now();
     const next = [
       ...existing.progress_notes,
-      { at: new Date(now).toISOString(), note: `[comment] ${note}` },
+      { at: toIso(now), note: `[comment] ${note}` },
     ];
     const updated = await this.store.patch(jobId, { progress_notes: next });
     this.publish('job.commented', updated);
@@ -320,36 +272,69 @@ export class JobService {
 
   /** Sweeper-driven: forcibly mark a job expired. */
   async markExpired(jobId: string): Promise<Job | null> {
-    const existing = await this.store.get(jobId);
-    if (!existing) return null;
-    if (TERMINAL_STATUSES.has(existing.status)) return existing;
-    const updated = await this.store.transitionStatus(
-      jobId,
-      existing.status,
-      'expired',
-      { error: 'ttl_elapsed' },
-      this.clock.now(),
-    );
-    if (!updated) return null;
-    this.publish('job.expired', updated);
-    await this.dispatcher.notifyDone(updated.session_id, updated.id);
-    return updated;
+    return this.transitionToTerminal(jobId, 'expired', 'job.expired', {
+      patch: { error: 'ttl_elapsed' },
+      quiet: true,
+    });
   }
 
   /** Sweeper-driven: forcibly mark a job orphaned. */
   async markOrphaned(jobId: string): Promise<Job | null> {
+    return this.transitionToTerminal(jobId, 'orphaned', 'job.orphaned', {
+      patch: { error: 'session_unreachable' },
+      quiet: true,
+    });
+  }
+
+  /**
+   * Move a job to a terminal state, publish the event, and unblock the
+   * dispatcher. Two modes:
+   *   - throwing (default, client/tool-driven): missing → NotFoundError,
+   *     already-terminal → ConflictError, lost race → ConflictError.
+   *   - quiet (sweeper-driven): missing → null, already-terminal → the
+   *     existing job, lost race → null.
+   */
+  private transitionToTerminal(
+    jobId: string,
+    to: JobStatus,
+    event: JobEventKind,
+    opts: { verb: string; patch?: Partial<Job>; quiet?: false },
+  ): Promise<Job>;
+  private transitionToTerminal(
+    jobId: string,
+    to: JobStatus,
+    event: JobEventKind,
+    opts: { patch?: Partial<Job>; quiet: true },
+  ): Promise<Job | null>;
+  private async transitionToTerminal(
+    jobId: string,
+    to: JobStatus,
+    event: JobEventKind,
+    opts: { verb?: string; patch?: Partial<Job>; quiet?: boolean },
+  ): Promise<Job | null> {
     const existing = await this.store.get(jobId);
-    if (!existing) return null;
-    if (TERMINAL_STATUSES.has(existing.status)) return existing;
+    if (!existing) {
+      if (opts.quiet) return null;
+      throw new NotFoundError('job', jobId);
+    }
+    if (TERMINAL_STATUSES.has(existing.status)) {
+      if (opts.quiet) return existing;
+      throw new ConflictError(
+        `cannot ${opts.verb} job in terminal state: ${existing.status}`,
+      );
+    }
     const updated = await this.store.transitionStatus(
       jobId,
       existing.status,
-      'orphaned',
-      { error: 'session_unreachable' },
+      to,
+      opts.patch ?? {},
       this.clock.now(),
     );
-    if (!updated) return null;
-    this.publish('job.orphaned', updated);
+    if (!updated) {
+      if (opts.quiet) return null;
+      throw new ConflictError('job state changed under us; retry');
+    }
+    this.publish(event, updated);
     await this.dispatcher.notifyDone(updated.session_id, updated.id);
     return updated;
   }

@@ -1,9 +1,12 @@
+import type { Command } from 'commander';
 import { loadConfig } from '../lib/config.js';
 import type { Config } from '../../config/schema.js';
 
 export interface ClientOptions {
   config?: string;
 }
+
+export type HttpMethod = 'GET' | 'POST' | 'DELETE';
 
 export interface ResolvedClient {
   config: Config;
@@ -23,7 +26,7 @@ export function resolveClient(opts: ClientOptions): ResolvedClient {
 
 export async function httpJson(
   client: ResolvedClient,
-  method: 'GET' | 'POST' | 'DELETE',
+  method: HttpMethod,
   pathname: string,
   body?: unknown,
 ): Promise<{ status: number; body: any }> {
@@ -57,4 +60,35 @@ export function dieOnError(
     console.error(`${failPrefix} (${code}): ${msg}`);
     process.exit(1);
   }
+}
+
+/** Pretty-print a JSON value to stdout (the CLI's standard output shape). */
+export function printJson(value: unknown): void {
+  console.log(JSON.stringify(value, null, 2));
+}
+
+/**
+ * Resolve the client, call the broker, exit on HTTP error, and (by default)
+ * pretty-print the response. Returns the parsed body so callers can chain a
+ * follow-up request (e.g. `submit --wait`). Collapses the
+ * resolve→call→dieOnError→print boilerplate shared by every CLI command.
+ */
+export async function runJson(
+  opts: ClientOptions,
+  method: HttpMethod,
+  pathname: string,
+  failMsg: string,
+  body?: unknown,
+  print = true,
+): Promise<any> {
+  const client = resolveClient(opts);
+  const r = await httpJson(client, method, pathname, body);
+  dieOnError(r, failMsg);
+  if (print) printJson(r.body);
+  return r.body;
+}
+
+/** Attach the standard `-c, --config <path>` option to a command. */
+export function withConfigOption(cmd: Command): Command {
+  return cmd.option('-c, --config <path>', 'path to config file');
 }
